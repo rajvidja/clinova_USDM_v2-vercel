@@ -15,6 +15,7 @@ import {
 } from '../shared/ocr.ts';
 import { db } from './db.ts';
 import { digitiseBlocks, type Block } from './digitise.ts';
+import { recordCreation } from './governance/lineage.ts';
 import { HttpError, uid } from './repo.ts';
 
 // OCR documents are registered in source_documents (kind = 'ocr'). The PaddleOCR service (ocr_service/) runs on its
@@ -194,21 +195,21 @@ function toBlocks(result: OcrResult): Block[] {
     switch (el.type) {
       case 'title':
       case 'heading':
-        if (text) blocks.push({ kind: 'heading', text, level: el.level ?? undefined });
+        if (text) blocks.push({ kind: 'heading', text, level: el.level ?? undefined, page: el.page });
         break;
       case 'list_item':
-        if (text) blocks.push({ kind: 'item', text });
+        if (text) blocks.push({ kind: 'item', text, page: el.page });
         break;
       case 'paragraph':
       case 'reference':
       case 'caption':
       case 'footnote':
-        if (text) blocks.push({ kind: 'para', text });
+        if (text) blocks.push({ kind: 'para', text, page: el.page });
         break;
       case 'table': {
         if (!el.table) break;
         const rows = tableText(el.table).split('\n');
-        rows.forEach((r, i) => blocks.push({ kind: 'para', text: r, tableHeader: i < el.table!.headerRows || undefined }));
+        rows.forEach((r, i) => blocks.push({ kind: 'para', text: r, tableHeader: i < el.table!.headerRows || undefined, page: el.page }));
         break;
       }
       default:
@@ -393,7 +394,9 @@ export function ocrRouter(): Router {
     const row = getRow(param(req, 'id'));
     const blocks = toBlocks(await loadResult(row.id));
     if (!blocks.length) throw new HttpError(422, 'The OCR result contains no text to structure.');
-    res.status(201).json(digitiseBlocks(blocks, { filename: row.filename, mimeType: row.mime_type, size: row.size, sourceDocumentId: row.id }));
+    const result = digitiseBlocks(blocks, { filename: row.filename, mimeType: row.mime_type, size: row.size, sourceDocumentId: row.id });
+    recordCreation('protocol.digitised', result.protocolId, result.provenance, `OCR digitisation of ${row.filename}`);
+    res.status(201).json(result);
   }));
 
   r.delete('/documents/:id', h(async (req, res) => {

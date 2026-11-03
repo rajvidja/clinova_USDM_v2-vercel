@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { recomputeAll } from '../../shared/completion';
 import type { EligibilityCriterion, Endpoint, Objective, ProtocolBundle, SaveRequest, SoaSchedule, StudyArm } from '../../shared/types';
-import { api } from '../lib/api';
+import { ApiError, api } from '../lib/api';
 
 type EntityKey = 'objectives' | 'endpoints' | 'arms' | 'criteria' | 'soa';
 type Meta = NonNullable<SaveRequest['meta']>;
@@ -216,7 +216,7 @@ export const useEditor = create<EditorState>((set, get) => {
           // Put the unsent changes back so nothing is lost, then retry.
           const dirtySubs = new Set([...sent.dirtySubs, ...cur.dirtySubs]);
           const dirtyEntities = new Set([...sent.dirtyEntities, ...cur.dirtyEntities]);
-          set({ dirtySubs, dirtyEntities, dirtyMeta: { ...sent.dirtyMeta, ...cur.dirtyMeta }, saveState: 'error', saveError: (e as Error).message });
+          set({ dirtySubs, dirtyEntities, dirtyMeta: { ...sent.dirtyMeta, ...cur.dirtyMeta }, saveState: 'error', saveError: e instanceof ApiError && e.status === 423 ? 'Protocol is Final and locked. Use a change request.' : (e as Error).message });
           persistPending(get());
           schedule(RETRY_MS);
           return false;

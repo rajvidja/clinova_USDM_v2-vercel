@@ -1,0 +1,16 @@
+{
+  "group": "Encounters",
+  "description": "Schedule of Activities visits.",
+  "rules": [
+    { "sourceEntity": "visit", "sourceField": "name", "targetEntity": "Encounter", "targetProperty": "name", "type": "direct", "status": "Mapped", "rule": { "fallback": "Visit {visitNumber}" } },
+    { "sourceEntity": "visit", "sourceField": "name", "targetEntity": "Encounter", "targetProperty": "label", "type": "direct", "status": "Mapped" },
+    { "sourceEntity": "visit", "sourceField": "(constant)", "targetEntity": "Encounter", "targetProperty": "type", "type": "value", "status": "Mapped", "rule": { "fn": "constantCode", "codelist": "C188728", "code": "C25716" }, "reason": "Every Schedule of Activities column in ProtocolIQ is a visit." },
+    { "sourceEntity": "visit", "sourceField": "(relationship) visit order", "targetEntity": "Encounter", "targetProperty": "previousId", "type": "relationship", "status": "Mapped", "rule": { "relationship": "encounter-order" } },
+    { "sourceEntity": "visit", "sourceField": "timing", "targetEntity": "Timing", "targetProperty": "value", "type": "value", "status": "Mapped", "rule": { "fn": "timing" }, "reason": "'Day N' and 'Week N' are converted to ISO 8601 durations relative to the Day 1 visit (Week N = N weeks after Day 1). Ranges and free text are not converted." },
+    { "sourceEntity": "visit", "sourceField": "window", "targetEntity": "Timing", "targetProperty": "windowLabel", "type": "value", "status": "Mapped", "rule": { "fn": "window", "bound": "label" }, "reason": "The visit window column, or a window written after the timing (e.g. 'Week 4 ± 3 d')." },
+    { "sourceEntity": "visit", "sourceField": "window", "targetEntity": "Timing", "targetProperty": "windowLower", "type": "value", "status": "Mapped", "rule": { "fn": "window", "bound": "lower" }, "reason": "'± N days', '-N/+M days' and week equivalents are converted to ISO 8601 durations." },
+    { "sourceEntity": "visit", "sourceField": "window", "targetEntity": "Timing", "targetProperty": "windowUpper", "type": "value", "status": "Mapped", "rule": { "fn": "window", "bound": "upper" } },
+    { "sourceEntity": "visit", "sourceField": "(relationship) timing", "targetEntity": "Encounter", "targetProperty": "scheduledAtId", "type": "relationship", "status": "Mapped", "rule": { "relationship": "encounter-timing" } },
+    { "sourceEntity": "visit", "sourceField": "(relationship) footnotes", "targetEntity": "Encounter", "targetProperty": "notes", "type": "relationship", "status": "Mapped", "rule": { "relationship": "encounter-footnotes" } }
+  ]
+}

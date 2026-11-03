@@ -2,6 +2,13 @@
 
 This is the deployable copy of [ProtocolIQ](https://github.com/rajvidja/clinova_USDM_v2), a rule-based clinical protocol builder with USDM mapping and PaddleOCR document digitisation. No generative AI is used anywhere.
 
+## Features in this build
+
+- **Protocol Digitisation** (rule-based + optional remote PaddleOCR) and **ICH Protocol Builder** writing to one structured study database
+- **USDM Mapping Studio** — deterministic mapping to USDM **4.0.0**, controlled terminology, schema + referential validation, approved-run export (never labelled “compliant” unless checks pass)
+- **Data Governance** — quality rules and scoring, issues with exceptions, lineage, audit trail, version history and change control for Final protocols
+- **Role-based access** — Admin, Data Steward, Protocol Author, Reviewer, Viewer (API and UI). Demo accounts are seeded; see `.env.example`
+
 It differs from the original in two ways:
 
 - **Demo data.** On Vercel the database is a temporary SQLite file in `/tmp`, seeded with the synthetic EXA-101 example protocol on each cold start. Edits work, but they are lost whenever the function instance is recycled. A banner in the app says so.
@@ -21,7 +28,11 @@ Without an OCR service, everything else still works: Protocol Builder, USDM expo
 1. In Vercel, choose **Add New → Project** and import this GitHub repository.
 2. Leave the framework preset as **Other**. `vercel.json` already sets the install command (`npm ci`) and the build command (`npm run build:vercel`).
 3. Set the Node.js version to **22.x** (Settings → General). The API relies on the built-in `node:sqlite` module.
-4. Deploy. The site and the example protocol work right away.
+4. In **Environment Variables**, set at least:
+   - `PROTOCOLIQ_SESSION_SECRET` — long random string (required for stable sessions across instances)
+   - `PROTOCOLIQ_DEMO_PASSWORD` — optional; defaults to `ProtocolIQ-demo`
+   - OCR vars only if you host the OCR service (`OCR_SERVICE_URL`, `OCR_API_TOKEN`, …)
+5. Deploy. Sign in with a demo account (e.g. `admin` / `ProtocolIQ-demo`). The synthetic example protocol is seeded on cold start.
 
 `npm run build:vercel` writes Vercel's Build Output API v3 format into `.vercel/output`: the Vite build under `static/`, and one bundled Node function for `/api/*`.
 

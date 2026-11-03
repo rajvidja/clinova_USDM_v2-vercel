@@ -12,7 +12,7 @@ import { Page } from '../components/Layout';
 import { ProtocolPicker } from '../components/ProtocolPicker';
 import { Button, Card, CompletionIcon, Notice, PageHeader, Progress, SourceBadge, Spinner, StatusBadge } from '../components/ui';
 import { ValidationView } from '../components/ValidationView';
-import { exportUrl } from '../lib/api';
+import { api, exportUrl } from '../lib/api';
 import { download, formatDateTime } from '../lib/format';
 import { useEditor } from '../store/editor';
 import { SaveIndicator, useProtocolLoader } from './builder/Editor';
@@ -280,6 +280,8 @@ export function Review() {
   const { id, bundle, loadError } = useModule('/review');
   const navigate = useNavigate();
   const report = useMemo(() => (bundle ? validateProtocol(bundle) : null), [bundle]);
+  const [statusMsg, setStatusMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   if (!id) return <ProtocolPicker title="Review & Validation" subtitle="Run rule-based validation checks and manage protocol status." base="/review" />;
   if (loadError) return <Page><Notice tone="error">{loadError}</Notice></Page>;
   if (!bundle || !report) return <Spinner />;
@@ -289,9 +291,48 @@ export function Review() {
     if (i.target === 'arms') return navigate(`/builder/${id}/arms`);
     navigate(`/builder/${id}/objectives`);
   };
+  const setStatus = async (status: 'Draft' | 'In Review' | 'Final') => {
+    setBusy(true);
+    setStatusMsg(null);
+    try {
+      const reason = status === 'Final' || bundle.protocol.status === 'Final' ? prompt('Reason for status change') || '' : '';
+      if ((status === 'Final' || bundle.protocol.status === 'Final') && !reason.trim()) {
+        setStatusMsg('A reason is required.');
+        return;
+      }
+      await api.setStatus(bundle.protocol.id, status, reason);
+      setStatusMsg(`Status set to ${status}.`);
+      navigate(`/review/${id}`, { replace: true });
+      window.location.reload();
+    } catch (e: any) {
+      setStatusMsg(e.message || 'Status change failed');
+    } finally {
+      setBusy(false);
+    }
+  };
   return (
     <Page wide>
       <ModuleHeader bundle={bundle} title="Review & Validation" />
+      <Card className="mb-4 flex flex-wrap items-center gap-2 p-4">
+        <span className="text-sm text-slate-600">Protocol status:</span>
+        <StatusBadge status={bundle.protocol.status} />
+        <Button size="sm" loading={busy} disabled={bundle.protocol.status === 'Draft'} onClick={() => setStatus('Draft')}>
+          Draft
+        </Button>
+        <Button size="sm" loading={busy} disabled={bundle.protocol.status === 'In Review'} onClick={() => setStatus('In Review')}>
+          Submit for review
+        </Button>
+        <Button size="sm" variant="primary" loading={busy} disabled={bundle.protocol.status === 'Final'} onClick={() => setStatus('Final')}>
+          Mark Final
+        </Button>
+        <Link to={`/lineage`} className="ml-auto text-sm text-brand-700 hover:underline">
+          Element lineage
+        </Link>
+        <Link to={`/quality`} className="text-sm text-brand-700 hover:underline">
+          Data quality
+        </Link>
+      </Card>
+      {statusMsg && <Notice tone={statusMsg.includes('failed') || statusMsg.includes('required') ? 'error' : 'success'} className="mb-4">{statusMsg}</Notice>}
       <ValidationView report={report} onGo={go} />
     </Page>
   );
@@ -336,7 +377,7 @@ export function ExportCenter() {
           This protocol is not Final. DOCX and PDF exports are marked DRAFT, and missing content appears as highlighted placeholders rather than being left out.
         </Notice>
       )}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {formats.map(({ f, icon: Icon, title, text }) => (
           <Card key={f} className="flex flex-col p-5">
             <Icon className="mb-3 h-7 w-7 text-brand-600" />
@@ -347,6 +388,16 @@ export function ExportCenter() {
             </Button>
           </Card>
         ))}
+        <Card className="flex flex-col p-5">
+          <Braces className="mb-3 h-7 w-7 text-brand-600" />
+          <div className="font-semibold text-slate-900">USDM JSON</div>
+          <p className="mb-4 mt-1 flex-1 text-sm text-slate-500">
+            Schema-validated USDM export from an approved mapping run. Open Mapping Studio to map, validate, approve and download. Never labelled “compliant” unless checks pass.
+          </p>
+          <Link to="/usdm">
+            <Button variant="primary">Open USDM Mapping Studio</Button>
+          </Link>
+        </Card>
       </div>
     </Page>
   );

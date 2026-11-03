@@ -5,6 +5,7 @@ import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, before, test } from 'node:test';
+import { useSession } from './helpers.ts';
 import type { ProtocolBundle } from '../shared/types.ts';
 
 const dir = mkdtempSync(join(tmpdir(), 'protocoliq-test-'));
@@ -12,6 +13,7 @@ process.env.PROTOCOLIQ_DB = join(dir, 'test.db');
 process.env.PROTOCOLIQ_NO_LISTEN = '1';
 
 let base = '';
+let restoreFetch = () => {};
 let close: () => void = () => {};
 
 before(async () => {
@@ -19,10 +21,12 @@ before(async () => {
   const server = app.listen(0);
   await new Promise((r) => server.once('listening', r));
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api`;
+  restoreFetch = await useSession(base, 'admin');
   close = () => server.close();
 });
 
 after(() => {
+  restoreFetch();
   close();
   rmSync(dir, { recursive: true, force: true });
 });

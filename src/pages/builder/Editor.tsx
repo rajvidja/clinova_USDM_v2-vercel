@@ -186,7 +186,11 @@ export function Editor() {
       {(recovered || bundle.protocol.status === 'Final') && (
         <div className="space-y-2 px-6 pt-3">
           {recovered && <Notice tone="info">Unsaved changes from your previous session were recovered and are being saved.</Notice>}
-          {bundle.protocol.status === 'Final' && <Notice tone="warn">This protocol is marked Final. Any edit returns it to Draft. A snapshot of the Final version is kept in History.</Notice>}
+          {bundle.protocol.status === 'Final' && (
+            <Notice tone="warn">
+              This protocol is Final and locked for direct editing. Propose amendments through Version History → Change requests. Returning it to Draft requires approval permission and a reason.
+            </Notice>
+          )}
         </div>
       )}
 

@@ -1,0 +1,14 @@
+{
+  "group": "Endpoints",
+  "description": "Trial endpoints (ICH E6 section 3 / 8).",
+  "rules": [
+    { "sourceEntity": "endpoint", "sourceField": "code", "targetEntity": "Endpoint", "targetProperty": "name", "type": "direct", "status": "Mapped", "rule": { "fallback": "name" } },
+    { "sourceEntity": "endpoint", "sourceField": "name", "targetEntity": "Endpoint", "targetProperty": "label", "type": "direct", "status": "Mapped" },
+    { "sourceEntity": "endpoint", "sourceField": "name", "targetEntity": "Endpoint", "targetProperty": "text", "type": "direct", "status": "Mapped" },
+    { "sourceEntity": "endpoint", "sourceField": "definition", "targetEntity": "Endpoint", "targetProperty": "description", "type": "direct", "status": "Mapped" },
+    { "sourceEntity": "endpoint", "sourceField": "category", "targetEntity": "Endpoint", "targetProperty": "level", "type": "terminology", "status": "Mapped", "rule": { "domain": "endpoint_level", "as": "Code" } },
+    { "sourceEntity": "endpoint", "sourceField": "(manual) purpose", "targetEntity": "Endpoint", "targetProperty": "purpose", "type": "manual", "status": "Not Mapped", "rule": { "valueType": "string" }, "reason": "The endpoint purpose (e.g. efficacy, safety, pharmacokinetic) is not captured as a separate field. Configure per study or per endpoint." },
+    { "sourceEntity": "endpoint", "sourceField": "measurementMethod", "targetEntity": "Endpoint", "targetProperty": null, "type": "unsupported", "status": "Not Mapped", "reason": "USDM 4.0.0 Endpoint has no measurement-method property. The value is preserved in the mapping report." },
+    { "sourceEntity": "endpoint", "sourceField": "timepoint", "targetEntity": "Endpoint", "targetProperty": null, "type": "unsupported", "status": "Not Mapped", "reason": "USDM 4.0.0 Endpoint has no timepoint property. Timepoints belong to estimands, which ProtocolIQ does not capture." }
+  ]
+}

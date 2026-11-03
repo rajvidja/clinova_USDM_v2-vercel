@@ -213,14 +213,34 @@ const registerTemplate = db.prepare(
 );
 for (const t of TEMPLATES) registerTemplate.run(t.id, t.version, t.name, JSON.stringify(t), new Date().toISOString());
 
+let depth = 0;
+
+/** Runs fn in a transaction; nested calls use savepoints so callers can compose repository functions. */
 export function tx<T>(fn: () => T): T {
-  db.exec('BEGIN IMMEDIATE');
+  const sp = `sp_${depth}`;
+  db.exec(depth === 0 ? 'BEGIN IMMEDIATE' : `SAVEPOINT ${sp}`);
+  depth++;
   try {
     const result = fn();
-    db.exec('COMMIT');
+    depth--;
+    db.exec(depth === 0 ? 'COMMIT' : `RELEASE ${sp}`);
     return result;
   } catch (e) {
-    db.exec('ROLLBACK');
+    depth--;
+    db.exec(depth === 0 ? 'ROLLBACK' : `ROLLBACK TO ${sp}; RELEASE ${sp}`);
     throw e;
+  }
+}
+
+/** Runs fn against the database and always rolls back, e.g. to validate a proposed change without applying it. */
+export function dryRun<T>(fn: () => T): T {
+  const sp = `dry_${depth}`;
+  db.exec(depth === 0 ? 'BEGIN IMMEDIATE' : `SAVEPOINT ${sp}`);
+  depth++;
+  try {
+    return fn();
+  } finally {
+    depth--;
+    db.exec(depth === 0 ? 'ROLLBACK' : `ROLLBACK TO ${sp}; RELEASE ${sp}`);
   }
 }

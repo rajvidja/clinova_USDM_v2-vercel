@@ -1,0 +1,15 @@
+{
+  "group": "Schedule of Activities",
+  "description": "Main schedule timeline, scheduled activity instances (SoA cells) and footnotes.",
+  "rules": [
+    { "sourceEntity": "soa", "sourceField": "(constant)", "targetEntity": "ScheduleTimeline", "targetProperty": "name", "type": "value", "status": "Mapped", "rule": { "fn": "template", "template": "Main Timeline" } },
+    { "sourceEntity": "soa", "sourceField": "(constant)", "targetEntity": "ScheduleTimeline", "targetProperty": "mainTimeline", "type": "value", "status": "Mapped", "rule": { "fn": "constant", "value": true }, "reason": "ProtocolIQ has one Schedule of Activities per protocol." },
+    { "sourceEntity": "soa", "sourceField": "(manual) entry condition", "targetEntity": "ScheduleTimeline", "targetProperty": "entryCondition", "type": "manual", "status": "Not Mapped", "rule": { "valueType": "string" }, "reason": "The condition for entering the schedule (e.g. 'Signed informed consent') is not captured. Configure per study." },
+    { "sourceEntity": "soa", "sourceField": "(relationship) first visit", "targetEntity": "ScheduleTimeline", "targetProperty": "entryId", "type": "relationship", "status": "Mapped", "rule": { "relationship": "timeline-entry" } },
+    { "sourceEntity": "soa", "sourceField": "(relationship) visit instances", "targetEntity": "ScheduledActivityInstance", "targetProperty": "encounterId", "type": "relationship", "status": "Mapped", "rule": { "relationship": "instance-encounter" }, "reason": "One scheduled activity instance per visit column." },
+    { "sourceEntity": "soa", "sourceField": "cells", "targetEntity": "ScheduledActivityInstance", "targetProperty": "activityIds", "type": "relationship", "status": "Mapped", "rule": { "relationship": "instance-activities" }, "reason": "Each marked SoA cell links the activity to the visit's scheduled instance." },
+    { "sourceEntity": "soa", "sourceField": "cells (optional mark)", "targetEntity": "ScheduledActivityInstance", "targetProperty": null, "type": "unsupported", "status": "Not Mapped", "reason": "USDM 4.0.0 has no property marking an activity as optional at a visit. Optional cells are scheduled like required ones and listed in the mapping report." },
+    { "sourceEntity": "footnote", "sourceField": "text", "targetEntity": "CommentAnnotation", "targetProperty": "text", "type": "value", "status": "Mapped", "rule": { "fn": "template", "template": "[{marker}] {text}" }, "reason": "Footnotes become comment annotations on the visits and activities that reference them." },
+    { "sourceEntity": "footnote", "sourceField": "(relationship) unattached", "targetEntity": "ScheduleTimeline", "targetProperty": null, "type": "unsupported", "status": "Not Mapped", "reason": "ScheduleTimeline has no notes property in USDM 4.0.0. Footnotes that are not attached to a visit or activity are attached to the study design notes." }
+  ]
+}

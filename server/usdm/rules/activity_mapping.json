@@ -1,0 +1,13 @@
+{
+  "group": "Activities",
+  "description": "Schedule of Activities assessments and procedures.",
+  "rules": [
+    { "sourceEntity": "activity", "sourceField": "name", "targetEntity": "Activity", "targetProperty": "name", "type": "direct", "status": "Mapped", "rule": { "fallback": "Activity {n}" } },
+    { "sourceEntity": "activity", "sourceField": "name", "targetEntity": "Activity", "targetProperty": "label", "type": "direct", "status": "Mapped" },
+    { "sourceEntity": "activity", "sourceField": "category", "targetEntity": "Activity", "targetProperty": null, "type": "unsupported", "status": "Not Mapped", "reason": "USDM 4.0.0 Activity has no category property. Categories such as 'Safety' or 'Efficacy' are preserved in the mapping report." },
+    { "sourceEntity": "activity", "sourceField": "name", "targetEntity": "Activity", "targetProperty": "biomedicalConceptIds", "type": "terminology", "status": "Mapped", "rule": { "domain": "biomedical_concept", "as": "BiomedicalConcept", "optional": true }, "reason": "Optional. Only activities with an approved biomedical-concept terminology entry are linked; no concept is inferred from the activity name." },
+    { "sourceEntity": "activity", "sourceField": "(relationship) biomedical concepts", "targetEntity": "Activity", "targetProperty": "biomedicalConceptIds", "type": "relationship", "status": "Mapped", "rule": { "relationship": "activity-biomedical-concepts" } },
+    { "sourceEntity": "activity", "sourceField": "(relationship) order", "targetEntity": "Activity", "targetProperty": "previousId", "type": "relationship", "status": "Mapped", "rule": { "relationship": "activity-order" } },
+    { "sourceEntity": "activity", "sourceField": "(relationship) footnotes", "targetEntity": "Activity", "targetProperty": "notes", "type": "relationship", "status": "Mapped", "rule": { "relationship": "activity-footnotes" } }
+  ]
+}

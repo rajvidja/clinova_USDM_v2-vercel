@@ -6,6 +6,7 @@ import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, before, test } from 'node:test';
+import { useSession } from './helpers.ts';
 import type { OcrDocument, OcrElement, OcrJobStatus, OcrResult, OcrTable } from '../shared/ocr.ts';
 
 // The Node routes are tested against a stub of the hosted OCR service (same /v1 HTTP API, token and signed URLs),
@@ -78,6 +79,7 @@ function fakeResult(documentId: string, documentName: string): OcrResult {
 
 let stub: Server;
 let base = '';
+let restoreFetch = () => {};
 let close: () => void = () => {};
 const stubCalls: string[] = [];
 
@@ -135,10 +137,12 @@ before(async () => {
   const server = app.listen(0);
   await new Promise((r) => server.once('listening', r));
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api`;
+  restoreFetch = await useSession(base, 'admin');
   close = () => server.close();
 });
 
 after(() => {
+  restoreFetch();
   close();
   stub.close();
   rmSync(dir, { recursive: true, force: true });

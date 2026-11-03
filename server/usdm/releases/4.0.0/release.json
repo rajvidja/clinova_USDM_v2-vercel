@@ -1,0 +1,38 @@
+{
+  "version": "4.0.0",
+  "name": "CDISC USDM 4.0.0",
+  "description": "CDISC Unified Study Definitions Model 4.0.0 (DDF-RA v4.0.0). API schema: OpenAPI 3.1.0 'DDF USDM API'.",
+  "schemaFile": "USDM_API.json",
+  "schemaLocation": "https://github.com/cdisc-org/DDF-RA/blob/v4.0.0/Deliverables/API/USDM_API.json",
+  "rootSchema": "Wrapper-Input",
+  "sources": [
+    {
+      "name": "USDM_API.json",
+      "url": "https://github.com/cdisc-org/DDF-RA/blob/v4.0.0/Deliverables/API/USDM_API.json",
+      "sha256": "dc4303bca26256c56e5cb83222e898a09a5244472f7fd092b425cc2b7568fe19",
+      "license": "MIT (CDISC DDF-RA)"
+    },
+    {
+      "name": "dataStructure.yml",
+      "url": "https://github.com/cdisc-org/DDF-RA/blob/v4.0.0/Deliverables/UML/dataStructure.yml",
+      "sha256": "6f49a407aef41a66dd40a82ad3348672a22cd8874849254d7e4f27d6275daca6",
+      "license": "MIT (CDISC DDF-RA)"
+    },
+    {
+      "name": "DDF Terminology",
+      "url": "https://evs.nci.nih.gov/ftp1/CDISC/DDF/",
+      "version": "2026-09-25"
+    },
+    {
+      "name": "SDTM Terminology",
+      "url": "https://evs.nci.nih.gov/ftp1/CDISC/SDTM/",
+      "version": "2026-09-25"
+    },
+    {
+      "name": "Protocol Terminology",
+      "url": "https://evs.nci.nih.gov/ftp1/CDISC/Protocol/",
+      "version": "2025-09-26"
+    }
+  ],
+  "coreRules": "CDISC CORE conformance rules for USDM are not bundled or executed by ProtocolIQ."
+}

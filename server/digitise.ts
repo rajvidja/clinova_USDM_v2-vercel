@@ -1,4 +1,5 @@
 import mammoth from 'mammoth';
+import path from 'node:path';
 import { parse as parseHtml, type HTMLElement } from 'node-html-parser';
 import { escapeHtml } from '../shared/richtext.ts';
 import { ICH_GCP_TEMPLATE } from '../shared/template/ichGcp.ts';
@@ -9,7 +10,9 @@ import { addSubsection, createProtocol, getBundle, HttpError, saveProtocol, uid,
 // Deterministic, rule-based parser: heading detection + keyword/title matching against the template.
 // No AI or statistical models are used.
 
-export type Block = { kind: 'heading' | 'para' | 'item'; text: string; level?: number; tableHeader?: boolean };
+export type Block = { kind: 'heading' | 'para' | 'item'; text: string; level?: number; tableHeader?: boolean; page?: number };
+
+export type ElementSource = { section?: string; text?: string; page?: number | null };
 
 export interface DigitisationReport {
   filename: string;
@@ -258,13 +261,16 @@ function toIsoDate(text: string): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function extractMetadata(blocks: Block[]): Record<string, string> {
+function extractMetadata(blocks: Block[], sources: Block[] = []): Record<string, string> {
   const meta: Record<string, string> = {};
   const head = blocks.slice(0, 60);
   const grab = (re: RegExp) => {
     for (const b of head) {
       const m = re.exec(b.text);
-      if (m?.[1]?.trim()) return clean(m[1]).replace(/[|]+.*$/, '').trim();
+      if (m?.[1]?.trim()) {
+        sources.push(b);
+        return clean(m[1]).replace(/[|]+.*$/, '').trim();
+      }
     }
     return '';
   };
@@ -286,7 +292,10 @@ function extractMetadata(blocks: Block[]): Record<string, string> {
     const candidate = head.find(
       (b) => b.text.length > 25 && b.text.length < 300 && !/[:|]/.test(b.text.slice(0, 30)) && !/^(table of contents|confidential)/i.test(b.text),
     );
-    if (candidate) meta.title = candidate.text;
+    if (candidate) {
+      meta.title = candidate.text;
+      sources.push(candidate);
+    }
   }
   return Object.fromEntries(Object.entries(meta).filter(([, v]) => v));
 }
@@ -336,7 +345,10 @@ export function digitiseBlocks(extracted: Block[], source: { filename: string; m
   const { filename, mimeType } = source;
   const blocks = normaliseHeadings(extracted).filter((b) => !/^\[[^\]]*\]$/.test(b.text));
   if (!blocks.length) throw new HttpError(422, 'No readable text was found in the document.');
-  const metadata = extractMetadata(blocks);
+  const metaSources: Block[] = [];
+  const metadata = extractMetadata(blocks, metaSources);
+  const where: Record<string, ElementSource> = {};
+  const firstPage = (bs: Block[]) => bs.find((b) => b.page)?.page ?? null;
 
   // Group blocks under headings.
   const groups: { heading: string; match: { key: string; score: number } | null; blocks: Block[] }[] = [];
@@ -351,6 +363,8 @@ export function digitiseBlocks(extracted: Block[], source: { filename: string; m
 
   // A section-level heading (e.g. "5. Selection of subjects") followed by a matched child should not swallow content.
   const contentByKey = new Map<string, { headings: string[]; blocks: Block[] }>();
+  const headingOf = new Map<Block, string>();
+  for (const g of groups) for (const b of g.blocks) headingOf.set(b, g.heading);
   const unmapped: DigitisationReport['unmapped'] = [];
   for (const g of groups) {
     if (!g.blocks.length) continue;
@@ -404,7 +418,9 @@ export function digitiseBlocks(extracted: Block[], source: { filename: string; m
         if (!text) continue;
         const type = widget.criterionType!;
         const n = save.criteria!.filter((c) => c.type === type).length + 1;
-        save.criteria!.push({ id: uid(), type, code: `${type === 'inclusion' ? 'I' : 'E'}${n}`, text } satisfies EligibilityCriterion);
+        const id = uid();
+        where[id] = { section: headingOf.get(b), text: b.text, page: b.page ?? null };
+        save.criteria!.push({ id, type, code: `${type === 'inclusion' ? 'I' : 'E'}${n}`, text } satisfies EligibilityCriterion);
         report.counts[type]++;
         items++;
       }
@@ -419,7 +435,9 @@ export function digitiseBlocks(extracted: Block[], source: { filename: string; m
         const text = label?.[2] ? stripEnumerator(label[2]) : entryText(b.text);
         if (!text) continue;
         objCodes[category]++;
-        save.objectives!.push({ id: uid(), code: `${category[0]}O${objCodes[category]}`, category, description: text } satisfies Objective);
+        const id = uid();
+        where[id] = { section: headingOf.get(b), text: b.text, page: b.page ?? null };
+        save.objectives!.push({ id, code: `${category[0]}O${objCodes[category]}`, category, description: text } satisfies Objective);
         report.counts.objectives++;
         items++;
       }
@@ -436,7 +454,9 @@ export function digitiseBlocks(extracted: Block[], source: { filename: string; m
         if (row.length === 7) {
           // Row exported by ProtocolIQ: ID | Category | Endpoint | Definition | Method | Timepoint | Objectives
           const cat = (['Primary', 'Secondary', 'Exploratory', 'Safety'] as const).find((c) => c === row[1]) ?? category;
-          save.endpoints!.push({ id: uid(), code: row[0], category: cat, name: row[2], definition: row[3], measurementMethod: row[4], timepoint: row[5], objectiveIds: [] });
+          const id = uid();
+          where[id] = { section: headingOf.get(b), text: b.text, page: b.page ?? null };
+          save.endpoints!.push({ id, code: row[0], category: cat, name: row[2], definition: row[3], measurementMethod: row[4], timepoint: row[5], objectiveIds: [] });
           report.counts.endpoints++;
           items++;
           continue;
@@ -444,7 +464,9 @@ export function digitiseBlocks(extracted: Block[], source: { filename: string; m
         const text = label?.[2] ? stripEnumerator(label[2]) : entryText(b.text);
         if (!text) continue;
         const n = save.endpoints!.length + 1;
-        save.endpoints!.push({ id: uid(), code: `EP${n}`, category, name: text.length > 160 ? text.slice(0, 157) + '…' : text, definition: text.length > 160 ? text : '', measurementMethod: '', timepoint: '', objectiveIds: [] });
+        const id = uid();
+        where[id] = { section: headingOf.get(b), text: b.text, page: b.page ?? null };
+        save.endpoints!.push({ id, code: `EP${n}`, category, name: text.length > 160 ? text.slice(0, 157) + '…' : text, definition: text.length > 160 ? text : '', measurementMethod: '', timepoint: '', objectiveIds: [] });
         report.counts.endpoints++;
         items++;
       }
@@ -455,6 +477,7 @@ export function digitiseBlocks(extracted: Block[], source: { filename: string; m
     } else {
       const target = pickTextField(sub.fields);
       if (target) {
+        where[sub.id] = { section: entry.headings.join(' / '), text: entry.blocks.map((x) => x.text).join('\n').slice(0, 4000), page: firstPage(entry.blocks) };
         save.subsections!.push({ id: sub.id, content: { ...sub.content, [target.key]: valueFor(target, entry.blocks) } });
         items = entry.blocks.length;
       }
@@ -466,6 +489,7 @@ export function digitiseBlocks(extracted: Block[], source: { filename: string; m
     const t = subByKey.get('design.treatments')!;
     const existing = save.subsections!.find((x) => x.id === t.id);
     const html = extraTreatmentHtml.join('');
+    where[t.id] ??= { section: 'Treatment sections (moved for manual structuring)', text: html.replace(/<[^>]+>/g, ' ').slice(0, 4000), page: null };
     if (existing) existing.content.description = String(existing.content.description ?? '') + html;
     else save.subsections!.push({ id: t.id, content: { description: html } });
   }
@@ -480,6 +504,8 @@ export function digitiseBlocks(extracted: Block[], source: { filename: string; m
       .map((g) => `<p><strong>${escapeHtml(g.heading)}</strong></p>${blocksToHtml(g.blocks)}`)
       .join('');
     saveProtocol(protocolId, { subsections: [{ id: subId, content: { content: html } }] });
+    const kept = groups.filter((g) => !g.match && g.blocks.length && g.heading !== '(Title page / front matter)');
+    where[subId] = { section: kept.map((g) => g.heading).join(' / ').slice(0, 1000), text: kept.flatMap((g) => g.blocks.map((b) => b.text)).join('\n').slice(0, 4000), page: firstPage(kept.flatMap((g) => g.blocks)) };
     report.notes.push(`${unmapped.length} source section(s) could not be matched to the template and were kept in Section 16 for review.`);
   }
   if (!report.counts.objectives) report.notes.push('No objectives were extracted. Enter them manually in 3.1–3.3.');
@@ -487,11 +513,18 @@ export function digitiseBlocks(extracted: Block[], source: { filename: string; m
   report.notes.push('Objective–endpoint links, study arms and the Schedule of Activities are not inferred and must be entered during review.');
 
   const final = getBundle(protocolId);
+  if (metaSources.length) {
+    const front = { section: 'Title page / front matter', text: [...new Set(metaSources.map((b) => b.text))].join('\n').slice(0, 4000), page: firstPage(metaSources) };
+    where[final.study.id] = front;
+    where[final.protocol.id] = front;
+  }
+  let documentId = source.sourceDocumentId ?? null;
   if (source.sourceDocumentId) {
     db.prepare(`UPDATE source_documents SET linked_protocol_id = ?, parse_report_json = ? WHERE id = ?`).run(protocolId, JSON.stringify(report), source.sourceDocumentId);
   } else {
+    documentId = uid();
     db.prepare(`INSERT INTO source_documents (id, study_id, protocol_id, filename, mime_type, size, parse_report_json, uploaded_at) VALUES (?,?,?,?,?,?,?,?)`).run(
-      uid(),
+      documentId,
       final.study.id,
       protocolId,
       filename,
@@ -501,7 +534,13 @@ export function digitiseBlocks(extracted: Block[], source: { filename: string; m
       new Date().toISOString(),
     );
   }
-  return { protocolId, report };
+  const provenance = {
+    sourceType: (source.sourceDocumentId ? 'ocr' : 'digitisation') as 'ocr' | 'digitisation',
+    sourceDocumentId: documentId,
+    extractionMethod: source.sourceDocumentId ? 'paddleocr-layout + rule-based template matching' : `rule-based parsing (${path.extname(filename).toLowerCase() || 'text'}) + template matching`,
+    elements: where,
+  };
+  return { protocolId, report, provenance };
 }
 
 function pickTextField(fields: FieldDef[]): FieldDef | undefined {

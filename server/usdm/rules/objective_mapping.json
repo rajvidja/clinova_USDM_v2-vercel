@@ -1,0 +1,10 @@
+{
+  "group": "Objectives",
+  "description": "Trial objectives (ICH E6 section 3).",
+  "rules": [
+    { "sourceEntity": "objective", "sourceField": "code", "targetEntity": "Objective", "targetProperty": "name", "type": "direct", "status": "Mapped", "rule": { "fallback": "{category} objective {n}" } },
+    { "sourceEntity": "objective", "sourceField": "description", "targetEntity": "Objective", "targetProperty": "text", "type": "direct", "status": "Mapped" },
+    { "sourceEntity": "objective", "sourceField": "category", "targetEntity": "Objective", "targetProperty": "level", "type": "terminology", "status": "Mapped", "rule": { "domain": "objective_level", "as": "Code" } },
+    { "sourceEntity": "objective", "sourceField": "(relationship) endpoints", "targetEntity": "Objective", "targetProperty": "endpoints", "type": "relationship", "status": "Mapped", "rule": { "relationship": "objective-endpoints" }, "reason": "USDM nests each endpoint in exactly one objective. An endpoint linked to several objectives is nested in the first and the other links are reported." }
+  ]
+}

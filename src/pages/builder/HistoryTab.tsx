@@ -50,7 +50,7 @@ export function HistoryTab() {
       </Card>
       <Card className="p-5">
         <h3 className="mb-1 text-sm font-semibold text-slate-800">Create version snapshot</h3>
-        <p className="mb-3 text-sm text-slate-500">Every save increments the revision number. Snapshots keep a restorable copy of the full protocol, for example before circulation or an amendment. A snapshot is also taken automatically when a protocol is marked Final.</p>
+        <p className="mb-3 text-sm text-slate-500">Every save increments the revision number. Snapshots keep a restorable copy of the full protocol, for example before circulation or an amendment. A snapshot is also taken automatically when a protocol is marked Final (Final protocols are then locked; amendments use change requests).</p>
         <div className="flex gap-2">
           <input className={inputCls} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Snapshot note, e.g. 'Draft 0.3 sent to medical review'" />
           <Button variant="primary" onClick={snapshot} loading={busy}>

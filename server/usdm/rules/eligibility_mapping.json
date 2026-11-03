@@ -1,0 +1,13 @@
+{
+  "group": "Eligibility Criteria",
+  "description": "Inclusion and exclusion criteria (ICH E6 5.1 / 5.2).",
+  "rules": [
+    { "sourceEntity": "criterion", "sourceField": "code", "targetEntity": "EligibilityCriterion", "targetProperty": "name", "type": "direct", "status": "Mapped", "rule": { "fallback": "{type} {n}" } },
+    { "sourceEntity": "criterion", "sourceField": "code", "targetEntity": "EligibilityCriterion", "targetProperty": "identifier", "type": "direct", "status": "Mapped", "rule": { "fallback": "{typeInitial}{n}" } },
+    { "sourceEntity": "criterion", "sourceField": "type", "targetEntity": "EligibilityCriterion", "targetProperty": "category", "type": "terminology", "status": "Mapped", "rule": { "domain": "criterion_category", "as": "Code" } },
+    { "sourceEntity": "criterion", "sourceField": "code", "targetEntity": "EligibilityCriterionItem", "targetProperty": "name", "type": "direct", "status": "Mapped", "rule": { "fallback": "{type} {n}" } },
+    { "sourceEntity": "criterion", "sourceField": "text", "targetEntity": "EligibilityCriterionItem", "targetProperty": "text", "type": "direct", "status": "Mapped" },
+    { "sourceEntity": "criterion", "sourceField": "(relationship) criterion text", "targetEntity": "EligibilityCriterion", "targetProperty": "criterionItemId", "type": "relationship", "status": "Mapped", "rule": { "relationship": "criterion-item" } },
+    { "sourceEntity": "criterion", "sourceField": "(relationship) order", "targetEntity": "EligibilityCriterion", "targetProperty": "previousId", "type": "relationship", "status": "Mapped", "rule": { "relationship": "criterion-order" } }
+  ]
+}

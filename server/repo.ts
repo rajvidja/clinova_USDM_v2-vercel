@@ -162,6 +162,11 @@ export function createProtocol(setup: ProtocolSetup, source: StudySource = 'buil
 
 // ---------- Read ----------
 
+export const subsectionProtocol = (subsectionId: string): string | null =>
+  ((db.prepare(`SELECT protocol_id FROM protocol_subsections WHERE id = ?`).get(subsectionId) as Row | undefined)?.protocol_id as string) ?? null;
+
+export const studyOfProtocol = (protocolId: string): string | null => ((db.prepare(`SELECT study_id FROM protocols WHERE id = ?`).get(protocolId) as Row | undefined)?.study_id as string) ?? null;
+
 function requireProtocolRow(id: string): Row {
   const row = db.prepare(`SELECT * FROM protocols WHERE id = ?`).get(id) as Row | undefined;
   if (!row) throw new HttpError(404, 'Protocol not found');
@@ -399,8 +404,15 @@ function recompute(protocolId: string, bumpRevision: boolean): Record<string, Co
   return statuses;
 }
 
-export function saveProtocol(protocolId: string, req: SaveRequest): SaveResponse {
-  const pRow = requireProtocolRow(protocolId);
+/** Final protocols are locked; changes go through an approved change request (which passes allowFinal). */
+export function assertEditable(protocolId: string) {
+  const row = requireProtocolRow(protocolId);
+  if (row.status === 'Final') throw new HttpError(423, 'This protocol is Final and locked. Propose the change through a change request, or return it to Draft (requires approval permission).');
+  return row;
+}
+
+export function saveProtocol(protocolId: string, req: SaveRequest, opts: { allowFinal?: boolean } = {}): SaveResponse {
+  const pRow = opts.allowFinal ? requireProtocolRow(protocolId) : assertEditable(protocolId);
   const completion = tx(() => {
     const t = now();
     if (req.meta) {
@@ -429,7 +441,6 @@ export function saveProtocol(protocolId: string, req: SaveRequest): SaveResponse
     if (req.arms) writeArms(protocolId, req.arms);
     if (req.criteria) writeCriteria(protocolId, req.criteria);
     if (req.soa) db.prepare(`UPDATE soa_schedules SET schedule_json = ?, updated_at = ? WHERE protocol_id = ?`).run(JSON.stringify(cleanSoa(req.soa)), t, protocolId);
-    if (pRow.status === 'Final') db.prepare(`UPDATE protocols SET status = 'Draft' WHERE id = ?`).run(protocolId);
     return recompute(protocolId, true);
   });
   const fresh = getBundle(protocolId);
@@ -450,6 +461,8 @@ export function setStatus(protocolId: string, status: ProtocolStatus): Protocol 
 
 export function deleteProtocol(protocolId: string) {
   const row = requireProtocolRow(protocolId);
+  const approved = db.prepare(`SELECT COUNT(*) AS n FROM protocol_versions WHERE protocol_id = ? AND approval_status = 'Approved'`).get(protocolId) as Row;
+  if (Number(approved.n)) throw new HttpError(409, 'This protocol has approved versions, which are retained as governed records and cannot be deleted.');
   tx(() => {
     db.prepare(`DELETE FROM protocols WHERE id = ?`).run(protocolId);
     const remaining = db.prepare(`SELECT COUNT(*) AS n FROM protocols WHERE study_id = ?`).get(row.study_id) as Row;
@@ -465,6 +478,12 @@ function requireSubsection(id: string): Subsection {
   return toSubsection(row);
 }
 
+function requireEditableSubsection(id: string): Subsection {
+  const sub = requireSubsection(id);
+  assertEditable(sub.protocolId);
+  return sub;
+}
+
 function renumber(sectionId: string) {
   const sec = db.prepare(`SELECT section_number FROM protocol_sections WHERE id = ?`).get(sectionId) as Row;
   const subs = db.prepare(`SELECT id FROM protocol_subsections WHERE section_id = ? ORDER BY order_index`).all(sectionId) as Row[];
@@ -477,6 +496,7 @@ function bump(protocolId: string) {
 }
 
 export function addSubsection(protocolId: string, sectionId: string, title: string, contentType: FieldType, afterId?: string): string {
+  assertEditable(protocolId);
   const sec = db.prepare(`SELECT * FROM protocol_sections WHERE id = ? AND protocol_id = ?`).get(sectionId, protocolId) as Row | undefined;
   if (!sec) throw new HttpError(404, 'Section not found');
   const cleanTitle = s(title, 300).trim();
@@ -505,7 +525,7 @@ export function addSubsection(protocolId: string, sectionId: string, title: stri
 }
 
 export function updateSubsectionMeta(id: string, patch: { title?: string; fields?: FieldDef[] }) {
-  const sub = requireSubsection(id);
+  const sub = requireEditableSubsection(id);
   tx(() => {
     if (patch.title !== undefined) {
       if (!sub.isOptional) throw new HttpError(400, 'Only optional subsections can be renamed');
@@ -523,7 +543,7 @@ export function updateSubsectionMeta(id: string, patch: { title?: string; fields
 }
 
 export function deleteSubsection(id: string) {
-  const sub = requireSubsection(id);
+  const sub = requireEditableSubsection(id);
   if (!sub.isOptional) throw new HttpError(400, 'Mandatory template subsections cannot be removed');
   tx(() => {
     db.prepare(`DELETE FROM protocol_subsections WHERE id = ?`).run(id);
@@ -533,7 +553,7 @@ export function deleteSubsection(id: string) {
 }
 
 export function duplicateSubsection(id: string): string {
-  const sub = requireSubsection(id);
+  const sub = requireEditableSubsection(id);
   if (sub.fields.some((f) => ['objectives', 'endpoints', 'arms', 'criteria', 'soa'].includes(f.type)) || sub.fields.some((f) => f.bind))
     throw new HttpError(400, 'Subsections bound to structured study data cannot be duplicated');
   const newId = uid();
@@ -551,7 +571,7 @@ export function duplicateSubsection(id: string): string {
 
 /** Move an optional subsection up or down. Mandatory subsections keep their relative template order. */
 export function moveSubsection(id: string, direction: 'up' | 'down') {
-  const sub = requireSubsection(id);
+  const sub = requireEditableSubsection(id);
   if (!sub.isOptional) throw new HttpError(400, 'Only optional subsections can be rearranged');
   const siblings = db.prepare(`SELECT id, order_index FROM protocol_subsections WHERE section_id = ? ORDER BY order_index`).all(sub.sectionId) as Row[];
   const idx = siblings.findIndex((r) => r.id === id);
@@ -685,6 +705,7 @@ export function getSnapshot(protocolId: string, versionId: string): ProtocolBund
 }
 
 export function restoreSnapshot(protocolId: string, versionId: string) {
+  assertEditable(protocolId);
   const snap = getSnapshot(protocolId, versionId);
   createSnapshot(protocolId, `Automatic backup before restoring revision ${snap.protocol.revision}`);
   const p = requireProtocolRow(protocolId);

@@ -1,4 +1,5 @@
-// Creates the SYNTHETIC example protocol (see server/seed.ts). Run with `npm run seed:example`.
-import { seedExample } from '../server/seed.ts';
+// Creates the SYNTHETIC example protocol (see server/seed.ts) with lineage and demo mapping values. Run with `npm run seed:example`.
+import { bootstrap, seedDemo } from '../server/bootstrap.ts';
 
-console.log(`Created synthetic example protocol ${seedExample()}`);
+bootstrap();
+console.log(`Created synthetic example protocol ${seedDemo()}`);

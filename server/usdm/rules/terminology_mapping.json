@@ -1,0 +1,82 @@
+{
+  "description": "Controlled terminology mappings from ProtocolIQ values to CDISC terms. 'auto' domains also accept a value that exactly equals (case-insensitive) a term's CDISC submission value, NCI preferred term or CDISC synonym; anything else is recorded as unmatched and flagged for review. Status 'Not Mapped' records a reviewed decision that no equivalent term exists.",
+  "domains": {
+    "study_phase": { "codelist": "C66737", "label": "Trial phase", "auto": true },
+    "intervention_model": { "codelist": "C99076", "label": "Intervention model", "auto": true },
+    "design_characteristic": { "codelist": "C207416", "label": "Study design characteristics", "auto": true },
+    "blinding": { "codelist": "C66735", "label": "Blinding schema", "auto": true },
+    "objective_level": { "codelist": "C188725", "label": "Objective level" },
+    "endpoint_level": { "codelist": "C188726", "label": "Endpoint level" },
+    "criterion_category": { "codelist": "C66797", "label": "Inclusion/exclusion category" },
+    "arm_type": { "codelist": "C174222", "label": "Study arm type" },
+    "intervention_role": { "codelist": "C207417", "label": "Study intervention role" },
+    "document_status": { "codelist": "C188723", "label": "Protocol document status" },
+    "route": { "codelist": "C66729", "label": "Route of administration", "auto": true },
+    "frequency": { "codelist": "C71113", "label": "Dosing frequency", "auto": true },
+    "unit": { "codelist": "C71620", "label": "Unit", "auto": true },
+    "biomedical_concept": { "codelist": "", "label": "Biomedical concept (activity)", "description": "Optional user-defined links from SoA activity names to CDISC biomedical concepts. Enter the concept code, name and reference URL; nothing is inferred." }
+  },
+  "entries": [
+    { "domain": "study_phase", "source": "Phase 1", "code": "C15600", "status": "Mapped", "basis": "Equivalent to NCI preferred term 'Phase I Trial' (Arabic numeral form of the CDISC synonym 'Trial Phase 1')." },
+    { "domain": "study_phase", "source": "Phase 1/2", "code": "C15693", "status": "Mapped", "basis": "Equivalent to 'Phase I/II Trial' (CDISC synonym 'Trial Phase 1-2')." },
+    { "domain": "study_phase", "source": "Phase 2", "code": "C15601", "status": "Mapped", "basis": "Equivalent to 'Phase II Trial' (CDISC synonym 'Trial Phase 2')." },
+    { "domain": "study_phase", "source": "Phase 2/3", "code": "C15694", "status": "Mapped", "basis": "Equivalent to 'Phase II/III Trial' (CDISC synonym 'Trial Phase 2-3')." },
+    { "domain": "study_phase", "source": "Phase 3", "code": "C15602", "status": "Mapped", "basis": "Equivalent to 'Phase III Trial' (CDISC synonym 'Trial Phase 3')." },
+    { "domain": "study_phase", "source": "Phase 4", "code": "C15603", "status": "Mapped", "basis": "Equivalent to 'Phase IV Trial' (CDISC synonym 'Trial Phase 4')." },
+    { "domain": "study_phase", "source": "Not applicable", "code": "C48660", "status": "Mapped", "basis": "Exact match to CDISC synonym 'Not Applicable'." },
+
+    { "domain": "intervention_model", "source": "Parallel group", "code": "C82639", "status": "Mapped", "basis": "ICH 'parallel group' design corresponds to CDISC PARALLEL ('Parallel Study')." },
+    { "domain": "intervention_model", "source": "Crossover", "code": "C82637", "status": "Mapped", "basis": "Equivalent to CDISC CROSS-OVER ('Crossover Study')." },
+    { "domain": "intervention_model", "source": "Factorial", "code": "C82638", "status": "Mapped", "basis": "Exact match to CDISC FACTORIAL." },
+    { "domain": "intervention_model", "source": "Single-arm", "code": "C82640", "status": "Mapped", "basis": "A single-arm trial corresponds to CDISC SINGLE GROUP ('Single Group Study')." },
+    { "domain": "intervention_model", "source": "Adaptive", "code": null, "status": "Not Mapped", "basis": "Adaptive is a design characteristic, not an intervention model. Mapped to the Adaptive design characteristic instead." },
+    { "domain": "intervention_model", "source": "Other", "code": null, "status": "Requires Review", "basis": "'Other' has no defined meaning. Choose the intervention model for this study manually." },
+    { "domain": "intervention_model", "source": "Randomised, parallel group", "code": "C82639", "status": "Mapped", "basis": "Intervention model part of the study design label is 'parallel group'." },
+    { "domain": "intervention_model", "source": "Randomised, crossover", "code": "C82637", "status": "Mapped", "basis": "Intervention model part of the study design label is 'crossover'." },
+    { "domain": "intervention_model", "source": "Non-randomised, controlled", "code": null, "status": "Requires Review", "basis": "The label does not state the intervention model (parallel, crossover, ...). Review manually." },
+
+    { "domain": "design_characteristic", "source": "Randomised", "code": "C46079", "status": "Mapped", "basis": "British spelling of CDISC 'Randomized'." },
+    { "domain": "design_characteristic", "source": "Non-randomised", "code": null, "status": "Not Mapped", "basis": "The Study Design Characteristics value set has no 'non-randomized' term; absence of 'Randomized' expresses it." },
+    { "domain": "design_characteristic", "source": "Parallel group", "code": null, "status": "Not Mapped", "basis": "Expressed by the intervention model, not a design characteristic." },
+    { "domain": "design_characteristic", "source": "Crossover", "code": null, "status": "Not Mapped", "basis": "Expressed by the intervention model, not a design characteristic." },
+    { "domain": "design_characteristic", "source": "Factorial", "code": null, "status": "Not Mapped", "basis": "Expressed by the intervention model, not a design characteristic." },
+    { "domain": "design_characteristic", "source": "Single-arm", "code": null, "status": "Not Mapped", "basis": "Expressed by the intervention model, not a design characteristic." },
+    { "domain": "design_characteristic", "source": "Other", "code": null, "status": "Not Mapped", "basis": "'Other' trial type carries no design characteristic." },
+
+    { "domain": "blinding", "source": "Open-label", "code": "C49659", "status": "Mapped", "basis": "Equivalent to CDISC OPEN LABEL." },
+    { "domain": "blinding", "source": "Single-blind", "code": "C28233", "status": "Mapped", "basis": "Equivalent to CDISC SINGLE BLIND." },
+    { "domain": "blinding", "source": "Double-blind", "code": "C15228", "status": "Mapped", "basis": "Equivalent to CDISC DOUBLE BLIND." },
+    { "domain": "blinding", "source": "Triple-blind", "code": null, "status": "Requires Review", "basis": "The Trial Blinding Schema codelist has no triple-blind term. Do not map to DOUBLE BLIND without review." },
+
+    { "domain": "objective_level", "source": "Primary", "code": "C85826", "status": "Mapped", "basis": "ProtocolIQ objective category 'Primary' is the Primary Objective level." },
+    { "domain": "objective_level", "source": "Secondary", "code": "C85827", "status": "Mapped", "basis": "ProtocolIQ objective category 'Secondary' is the Secondary Objective level." },
+    { "domain": "objective_level", "source": "Exploratory", "code": "C163559", "status": "Mapped", "basis": "ProtocolIQ objective category 'Exploratory' is the Exploratory Objective level." },
+
+    { "domain": "endpoint_level", "source": "Primary", "code": "C94496", "status": "Mapped", "basis": "ProtocolIQ endpoint category 'Primary' is the Primary Endpoint level." },
+    { "domain": "endpoint_level", "source": "Secondary", "code": "C139173", "status": "Mapped", "basis": "ProtocolIQ endpoint category 'Secondary' is the Secondary Endpoint level." },
+    { "domain": "endpoint_level", "source": "Exploratory", "code": "C170559", "status": "Mapped", "basis": "ProtocolIQ endpoint category 'Exploratory' is the Exploratory Endpoint level." },
+    { "domain": "endpoint_level", "source": "Safety", "code": null, "status": "Requires Review", "basis": "'Safety' describes the endpoint purpose, not its level. The Endpoint Level value set has only Primary, Secondary and Exploratory. Choose the level per endpoint." },
+
+    { "domain": "criterion_category", "source": "inclusion", "code": "C25532", "status": "Mapped", "basis": "Exact match to CDISC INCLUSION." },
+    { "domain": "criterion_category", "source": "exclusion", "code": "C25370", "status": "Mapped", "basis": "Exact match to CDISC EXCLUSION." },
+
+    { "domain": "arm_type", "source": "Experimental", "code": "C174266", "status": "Mapped", "basis": "Equivalent to 'Experimental Arm'." },
+    { "domain": "arm_type", "source": "Active comparator", "code": "C174267", "status": "Mapped", "basis": "Equivalent to 'Active Comparator Arm'." },
+    { "domain": "arm_type", "source": "Placebo comparator", "code": "C174268", "status": "Mapped", "basis": "Equivalent to 'Placebo Comparator Arm'." },
+    { "domain": "arm_type", "source": "No intervention", "code": "C174270", "status": "Mapped", "basis": "Equivalent to 'No Intervention Arm'." },
+    { "domain": "arm_type", "source": "Other", "code": null, "status": "Requires Review", "basis": "'Other' has no defined meaning. Choose the arm type manually." },
+
+    { "domain": "intervention_role", "source": "Experimental", "code": "C41161", "status": "Mapped", "basis": "The intervention of an experimental arm is the Experimental Intervention." },
+    { "domain": "intervention_role", "source": "Active comparator", "code": "C68609", "status": "Mapped", "basis": "The intervention of an active comparator arm is the Active Comparator." },
+    { "domain": "intervention_role", "source": "Placebo comparator", "code": "C753", "status": "Mapped", "basis": "The intervention of a placebo comparator arm is a Placebo." },
+    { "domain": "intervention_role", "source": "No intervention", "code": null, "status": "Not Mapped", "basis": "A no-intervention arm has no study intervention." },
+    { "domain": "intervention_role", "source": "Other", "code": null, "status": "Requires Review", "basis": "Choose the intervention role manually." },
+
+    { "domain": "document_status", "source": "Draft", "code": "C85255", "status": "Mapped", "basis": "Exact match to 'Draft'." },
+    { "domain": "document_status", "source": "In Review", "code": "C188862", "status": "Mapped", "basis": "ProtocolIQ 'In Review' is 'Pending Review'." },
+    { "domain": "document_status", "source": "Final", "code": "C25508", "status": "Mapped", "basis": "Exact match to 'Final'." },
+
+    { "domain": "frequency", "source": "Once daily", "code": "C25473", "status": "Requires Review", "basis": "Curated: 'Once daily' is read as CDISC QD (synonym 'Daily'). Confirm the dosing intent." },
+    { "domain": "frequency", "source": "Twice daily", "code": "C64496", "status": "Requires Review", "basis": "Curated: 'Twice daily' is read as CDISC BID (preferred term 'Twice Daily')." }
+  ]
+}
