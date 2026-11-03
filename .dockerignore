@@ -1,0 +1,4 @@
+*
+!ocr_service/
+ocr_service/tests/
+**/__pycache__/

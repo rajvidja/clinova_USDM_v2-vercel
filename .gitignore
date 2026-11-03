@@ -1,0 +1,12 @@
+node_modules
+dist
+data/*.db
+data/*.db-*
+data/documents/
+data/local-runs/
+/.venv-ocr
+/models
+__pycache__/
+.vercel
+.env
+.env.local
